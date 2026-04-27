@@ -123,4 +123,25 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     return Results.Accepted();
 });
 
+// Profile endpoints — employees may only retrieve their own profile (sub claim → employeeId)
+app.MapGet("/profile/me", [Authorize(Policy = "EmployeePolicy")] async (
+    HttpContext httpContext,
+    [FromServices] Foundation.Application.Services.IProfileService profileService,
+    CancellationToken cancellationToken) =>
+{
+    var sub = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+           ?? httpContext.User.FindFirstValue("sub");
+
+    if (sub is null || !Guid.TryParse(sub, out var employeeId))
+    {
+        return Results.Unauthorized();
+    }
+
+    var profile = await profileService.GetMyProfileAsync(employeeId, cancellationToken);
+
+    return profile is null
+        ? Results.NotFound(new { message = "Employee profile not found." })
+        : Results.Ok(profile);
+});
+
 app.Run();
