@@ -12,4 +12,6 @@ public sealed class Employee
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string FullName => $"{FirstName} {LastName}";
+
+    public ICollection<EmployeeDomain> EmployeeDomains { get; set; } = new List<EmployeeDomain>();
 }
