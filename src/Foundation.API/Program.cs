@@ -107,8 +107,30 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 
 app.MapGet("/metrics", () => Results.Ok("Metrics endpoint"));
 
-app.MapGet("/employees", [Authorize(Policy = "EmployeePolicy")] ([FromServices] Foundation.Application.Services.IEmployeeService service) =>
-    Results.Ok(service.ListAsync()));
+app.MapGet("/employees", [Authorize(Policy = "EmployeePolicy")] async (
+    [FromServices] Foundation.Application.Services.IEmployeeService service,
+    [FromQuery] string? domainIds,
+    CancellationToken cancellationToken) =>
+{
+    if (!string.IsNullOrWhiteSpace(domainIds))
+    {
+        var parsedIds = domainIds
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => Guid.TryParse(s, out var g) ? g : (Guid?)null)
+            .Where(g => g.HasValue)
+            .Select(g => g!.Value)
+            .ToList();
+
+        if (parsedIds.Count > 0)
+        {
+            var filtered = await service.ListByDomainIdsAsync(parsedIds, cancellationToken);
+            return Results.Ok(filtered);
+        }
+    }
+
+    var employees = await service.ListAsync(cancellationToken);
+    return Results.Ok(employees);
+});
 
 app.MapGet("/employees/{id}", [Authorize(Policy = "LeadershipPolicy")] ([FromServices] Foundation.Application.Services.IEmployeeService service, Guid id) =>
     service.GetAsync(id) switch
@@ -122,5 +144,11 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     var task = service.GetAsync(employee.Id);
     return Results.Accepted();
 });
+
+// Domain management endpoints (admin: create/update/delete; all authenticated: list/get)
+app.MapDomainEndpoints();
+
+// Employee-domain assignment endpoints
+app.MapEmployeeDomainEndpoints();
 
 app.Run();
