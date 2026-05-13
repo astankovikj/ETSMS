@@ -1,6 +1,7 @@
 using Foundation.API.Endpoints;
 using Foundation.Application.Extensions;
 using Foundation.Infrastructure.Extensions;
+using Foundation.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.RateLimiting;
@@ -79,6 +80,14 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// ── Taxonomy seed ────────────────────────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FoundationDbContext>();
+    await TaxonomySeeder.SeedAsync(db);
+}
+
+// ── Middleware pipeline ──────────────────────────────────────────────────────────
 app.UseRateLimiter();
 app.UseCors();
 app.UseAuthentication();
