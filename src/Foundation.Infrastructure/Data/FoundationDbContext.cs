@@ -1,5 +1,6 @@
 using Foundation.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using DomainEntity = Foundation.Domain.Entities.Domain;
 
 namespace Foundation.Infrastructure.Data;
 
@@ -14,7 +15,7 @@ public sealed class FoundationDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Technology> Technologies => Set<Technology>();
     public DbSet<TechnologyRelationship> TechnologyRelationships => Set<TechnologyRelationship>();
-    public DbSet<Domain> Domains => Set<Domain>();
+    public DbSet<DomainEntity> Domains => Set<DomainEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,7 +60,7 @@ public sealed class FoundationDbContext : DbContext
                    .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<Domain>(builder =>
+        modelBuilder.Entity<DomainEntity>(builder =>
         {
             builder.HasKey(d => d.Id);
             builder.Property(d => d.Name).IsRequired().HasMaxLength(100);

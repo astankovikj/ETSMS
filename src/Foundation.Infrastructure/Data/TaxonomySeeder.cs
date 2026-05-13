@@ -1,5 +1,6 @@
 using Foundation.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using DomainEntity = Foundation.Domain.Entities.Domain;
 
 namespace Foundation.Infrastructure.Data;
 
@@ -246,26 +247,26 @@ public static class TaxonomySeeder
     private static readonly (string Name, DomainType Type)[] DomainDefinitions =
     [
         // Industry
-        ("Finance",             DomainType.Industry),
-        ("Healthcare",          DomainType.Industry),
-        ("Retail",              DomainType.Industry),
-        ("Insurance",           DomainType.Industry),
-        ("Education",           DomainType.Industry),
-        ("Manufacturing",       DomainType.Industry),
-        ("Energy & Utilities",  DomainType.Industry),
-        ("Telecommunications",  DomainType.Industry),
-        ("Government",          DomainType.Industry),
+        ("Finance",               DomainType.Industry),
+        ("Healthcare",            DomainType.Industry),
+        ("Retail",                DomainType.Industry),
+        ("Insurance",             DomainType.Industry),
+        ("Education",             DomainType.Industry),
+        ("Manufacturing",         DomainType.Industry),
+        ("Energy & Utilities",    DomainType.Industry),
+        ("Telecommunications",    DomainType.Industry),
+        ("Government",            DomainType.Industry),
         ("Media & Entertainment", DomainType.Industry),
 
         // Business Function
-        ("Engineering",         DomainType.BusinessFunction),
-        ("HR",                  DomainType.BusinessFunction),
-        ("Marketing",           DomainType.BusinessFunction),
-        ("Sales",               DomainType.BusinessFunction),
-        ("Finance & Accounting",DomainType.BusinessFunction),
-        ("Operations",          DomainType.BusinessFunction),
-        ("Legal & Compliance",  DomainType.BusinessFunction),
-        ("Customer Support",    DomainType.BusinessFunction),
+        ("Engineering",           DomainType.BusinessFunction),
+        ("HR",                    DomainType.BusinessFunction),
+        ("Marketing",             DomainType.BusinessFunction),
+        ("Sales",                 DomainType.BusinessFunction),
+        ("Finance & Accounting",  DomainType.BusinessFunction),
+        ("Operations",            DomainType.BusinessFunction),
+        ("Legal & Compliance",    DomainType.BusinessFunction),
+        ("Customer Support",      DomainType.BusinessFunction),
     ];
 
     // ── Public entry point ────────────────────────────────────────────────────────
@@ -286,9 +287,10 @@ public static class TaxonomySeeder
 
     private static async Task SeedCategoriesAsync(FoundationDbContext db)
     {
-        var existing = await db.Categories
+        var existing = (await db.Categories
             .Select(c => c.Name)
-            .ToHashSetAsync();
+            .ToListAsync())
+            .ToHashSet();
 
         var toAdd = CategoryNames
             .Where(name => !existing.Contains(name))
@@ -309,9 +311,10 @@ public static class TaxonomySeeder
         var categoryLookup = await db.Categories
             .ToDictionaryAsync(c => c.Name, c => c.Id);
 
-        var existingNames = await db.Technologies
+        var existingNames = (await db.Technologies
             .Select(t => t.Name)
-            .ToHashSetAsync();
+            .ToListAsync())
+            .ToHashSet();
 
         var toAdd = TechnologyDefinitions
             .Where(td => !existingNames.Contains(td.Name)
@@ -337,9 +340,10 @@ public static class TaxonomySeeder
         var techLookup = await db.Technologies
             .ToDictionaryAsync(t => t.Name, t => t.Id);
 
-        var existingPairs = await db.TechnologyRelationships
+        var existingPairs = (await db.TechnologyRelationships
             .Select(r => new { r.PrimaryTechnologyId, r.SecondaryTechnologyId })
-            .ToHashSetAsync();
+            .ToListAsync())
+            .ToHashSet();
 
         var toAdd = new List<TechnologyRelationship>();
 
@@ -374,13 +378,14 @@ public static class TaxonomySeeder
 
     private static async Task SeedDomainsAsync(FoundationDbContext db)
     {
-        var existing = await db.Domains
+        var existing = (await db.Domains
             .Select(d => d.Name)
-            .ToHashSetAsync();
+            .ToListAsync())
+            .ToHashSet();
 
         var toAdd = DomainDefinitions
             .Where(dd => !existing.Contains(dd.Name))
-            .Select(dd => new Domain
+            .Select(dd => new DomainEntity
             {
                 Name       = dd.Name,
                 DomainType = dd.Type,
