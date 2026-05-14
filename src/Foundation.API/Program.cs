@@ -13,6 +13,7 @@ using Foundation.API.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,14 +32,24 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 
 // Authentication & Authorization
-var azureAdSettings = builder.Configuration.GetSection("Authentication:AzureAd");
+// Custom JWT bearer tokens validated via the application's shared secret (FR-1, NFR-3, NFR-6).
+var jwtSettings = builder.Configuration.GetSection("Authentication:Jwt");
+var signingKey = jwtSettings["SigningKey"]
+    ?? throw new InvalidOperationException("JWT signing key is not configured. Set 'Authentication:Jwt:SigningKey'.");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = azureAdSettings["Authority"];
-        options.Audience = azureAdSettings["Audience"];
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSettings["Audience"],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
             RoleClaimType = ClaimTypes.Role
         };
     });
@@ -122,5 +133,8 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     var task = service.GetAsync(employee.Id);
     return Results.Accepted();
 });
+
+// Profile endpoints (FR-2, FR-3, FR-4, FR-5, FR-6)
+app.MapProfileEndpoints();
 
 app.Run();
