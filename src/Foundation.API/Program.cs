@@ -13,6 +13,7 @@ using Foundation.API.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using Foundation.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -122,5 +123,28 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     var task = service.GetAsync(employee.Id);
     return Results.Accepted();
 });
+
+// GET /api/profile/me — returns the authenticated employee's full skill profile.
+// The employee identity is derived from the bearer token's email claim; the server
+// enforces that an employee can only retrieve their own profile (FR-1, AC-9, AC-10).
+app.MapGet("/api/profile/me",
+    [Authorize(Policy = "EmployeePolicy")]
+    async (HttpContext httpContext, [FromServices] IProfileService profileService, CancellationToken cancellationToken) =>
+    {
+        // Resolve the caller's e-mail from the JWT claims (preferred_username or email claim).
+        var email = httpContext.User.FindFirstValue("preferred_username")
+                 ?? httpContext.User.FindFirstValue(ClaimTypes.Email);
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Results.Unauthorized();
+        }
+
+        var profile = await profileService.GetMyProfileAsync(email, cancellationToken);
+
+        return profile is null
+            ? Results.NotFound()
+            : Results.Ok(profile);
+    });
 
 app.Run();
