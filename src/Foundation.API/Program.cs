@@ -123,4 +123,8 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     return Results.Accepted();
 });
 
+// Feature #276 — Skills catalogue search and employee skill profile
+app.MapSkillEndpoints();
+app.MapProfileSkillEndpoints();
+
 app.Run();
