@@ -19,6 +19,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<ISkillRepository, SkillRepository>();
+        services.AddScoped<IEmployeeSkillRepository, EmployeeSkillRepository>();
 
         return services;
     }
