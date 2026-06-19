@@ -1,5 +1,8 @@
 using Foundation.API.Endpoints;
+using Foundation.Application.DTOs;
 using Foundation.Application.Extensions;
+using Foundation.Application.Services;
+using Foundation.Application.Interfaces;
 using Foundation.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -123,4 +126,58 @@ app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Fo
     return Results.Accepted();
 });
 
+app.MapGet("/assessments/latest", [Authorize(Policy = "EmployeePolicy")]
+    async (ClaimsPrincipal user, [FromServices] ISkillAssessmentService service) =>
+{
+    var employeeId = TryGetEmployeeId(user);
+    if (employeeId is null)
+    {
+        return Results.BadRequest(new { error = "Unable to determine employee identity." });
+    }
+
+    var snapshot = await service.GetLatestSnapshotAsync(employeeId.Value);
+    return Results.Ok(snapshot);
+});
+
+app.MapPost("/assessments", [Authorize(Policy = "EmployeePolicy")]
+    async (ClaimsPrincipal user, [FromServices] ISkillAssessmentService service, [FromBody] CreateSkillAssessmentRequest request) =>
+{
+    var employeeId = TryGetEmployeeId(user);
+    if (employeeId is null)
+    {
+        return Results.BadRequest(new { error = "Unable to determine employee identity." });
+    }
+
+    try
+    {
+        var snapshot = await service.CreateAsync(employeeId.Value, request);
+        return Results.Created($"/assessments/{snapshot.Id}", snapshot);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapGet("/assessments", [Authorize(Policy = "LeadershipPolicy")]
+    async ([FromServices] ISkillAssessmentService service) =>
+{
+    var snapshots = await service.ListLatestByEmployeesAsync();
+    return Results.Ok(snapshots);
+});
+
 app.Run();
+
+static Guid? TryGetEmployeeId(ClaimsPrincipal user)
+{
+    var identifier = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? user.FindFirst("sub")?.Value
+                        ?? user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+    if (Guid.TryParse(identifier, out var parsedId))
+    {
+        return parsedId;
+    }
+
+    return null;
+}

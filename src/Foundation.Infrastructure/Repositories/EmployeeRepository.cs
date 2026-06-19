@@ -18,6 +18,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
     {
         return await _context.Employees
             .AsNoTracking()
+            .Include(e => e.SkillAssessmentSnapshots)
             .OrderBy(e => e.LastName)
             .ThenBy(e => e.FirstName)
             .ToListAsync(cancellationToken);
@@ -27,6 +28,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
     {
         return await _context.Employees
             .AsNoTracking()
+            .Include(e => e.SkillAssessmentSnapshots)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
