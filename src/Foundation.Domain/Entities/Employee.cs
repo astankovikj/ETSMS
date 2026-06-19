@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Foundation.Domain.Entities;
 
@@ -12,4 +13,6 @@ public sealed class Employee
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string FullName => $"{FirstName} {LastName}";
+
+    public List<SkillAssessmentSnapshot> SkillAssessmentSnapshots { get; set; } = new();
 }
