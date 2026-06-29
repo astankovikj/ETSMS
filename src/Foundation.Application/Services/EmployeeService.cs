@@ -42,4 +42,27 @@ public sealed class EmployeeService : IEmployeeService
             Role = employee.Role
         };
     }
+
+    public async Task<EmployeeProfileDto?> GetProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var employee = await _repository.GetProfileAsync(id, cancellationToken);
+        if (employee is null)
+        {
+            return null;
+        }
+
+        return new EmployeeProfileDto
+        {
+            Id = employee.Id,
+            FullName = employee.FullName,
+            Email = employee.Email,
+            Role = employee.Role,
+            Department = employee.Department,
+            JobTitle = employee.JobTitle,
+            PhoneNumber = employee.PhoneNumber,
+            ProfilePictureUrl = employee.ProfilePictureUrl,
+            Bio = employee.Bio,
+            Location = employee.Location
+        };
+    }
 }

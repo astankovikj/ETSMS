@@ -117,6 +117,12 @@ app.MapGet("/employees/{id}", [Authorize(Policy = "LeadershipPolicy")] ([FromSer
         null => Results.NotFound()
     });
 
+app.MapGet("/employees/{id}/profile", [Authorize(Policy = "EmployeePolicy")] async ([FromServices] Foundation.Application.Services.IEmployeeService service, Guid id, CancellationToken cancellationToken) =>
+{
+    var profile = await service.GetProfileAsync(id, cancellationToken);
+    return profile is not null ? Results.Ok(profile) : Results.NotFound();
+});
+
 app.MapPost("/employees", [Authorize(Policy = "AdminPolicy")] ([FromServices] Foundation.Application.Services.IEmployeeService service, [FromBody] Foundation.Domain.Entities.Employee employee) =>
 {
     var task = service.GetAsync(employee.Id);

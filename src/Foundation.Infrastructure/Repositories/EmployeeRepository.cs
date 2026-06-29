@@ -30,6 +30,13 @@ public sealed class EmployeeRepository : IEmployeeRepository
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
+    public async Task<Employee?> GetProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Employees
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+    }
+
     public async Task AddAsync(Employee employee, CancellationToken cancellationToken = default)
     {
         await _context.Employees.AddAsync(employee, cancellationToken);
